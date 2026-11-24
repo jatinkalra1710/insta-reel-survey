@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Reels and studying: a 2-minute student survey</title>
+<meta name="description" content="An anonymous 10-question survey on Instagram Reels and focus while studying.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Public+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #161a33;
+    --paper: #eceaf7;
+    --card: #ffffff;
+    --accent: #d6336c;
+    --muted: #5a5e7d;
+    --line: #cfcbe6;
+    --head: "Bricolage Grotesque", "Trebuchet MS", sans-serif;
+    --body: "Public Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--body);
+    font-size: 17px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  .app {
+    max-width: 520px;
+    min-height: 100vh;
+    min-height: 100dvh;
+    margin: 0 auto;
+    padding: calc(18px + env(safe-area-inset-top, 0px)) 20px calc(20px + env(safe-area-inset-bottom, 0px));
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Story-style progress: the one memorable thing */
+  .bars { display: flex; gap: 4px; height: 4px; margin-bottom: 28px; }
+  .bars i { flex: 1; border-radius: 2px; background: var(--line); overflow: hidden; position: relative; }
+  .bars i::after {
+    content: ""; position: absolute; inset: 0; background: var(--ink);
+    transform: scaleX(0); transform-origin: left; transition: transform .35s ease;
+  }
+  .bars i.on::after { transform: scaleX(1); }
+  .bars i.now::after { background: var(--accent); }
+
+  .stage { flex: 1; display: flex; flex-direction: column; }
+  .count { color: var(--muted); font-size: 15px; margin: 0 0 10px; }
+  h1, h2 {
+    font-family: var(--head);
+    font-weight: 800;
+    line-height: 1.12;
+    letter-spacing: -0.02em;
+    margin: 0 0 18px;
+  }
+  h1 { font-size: clamp(2.1rem, 8vw, 2.8rem); }
+  h2 { font-size: clamp(1.45rem, 5.4vw, 1.9rem); margin-bottom: 22px; }
+  p { margin: 0 0 14px; max-width: 60ch; }
+  .muted { color: var(--muted); }
+
+  .opts { display: grid; gap: 10px; margin: 0; padding: 0; border: 0; }
+  .opt {
+    appearance: none; width: 100%; text-align: left; cursor: pointer;
+    font: inherit; color: var(--ink);
+    background: var(--card);
+    border: 2px solid var(--line);
+    border-radius: 14px;
+    padding: 15px 16px;
+    display: flex; align-items: center; gap: 12px;
+    transition: border-color .15s, background-color .15s, color .15s;
+  }
+  .opt:hover { border-color: var(--ink); }
+  .opt .dot {
+    flex: none; width: 20px; height: 20px; border-radius: 50%;
+    border: 2px solid var(--line); background: #fff;
+    transition: border-color .15s, background-color .15s, box-shadow .15s;
+  }
+  .opt[aria-checked="true"] { background: var(--ink); border-color: var(--ink); color: #fff; }
+  .opt[aria-checked="true"] .dot { border-color: var(--accent); background: var(--accent); box-shadow: inset 0 0 0 4px var(--ink); }
+  .opt:focus-visible, .btn:focus-visible, .link:focus-visible {
+    outline: 3px solid var(--accent); outline-offset: 2px;
+  }
+
+  .nav { display: flex; gap: 10px; margin-top: 26px; align-items: center; }
+  .btn {
+    appearance: none; cursor: pointer; font: inherit; font-weight: 600;
+    border-radius: 999px; padding: 14px 26px; border: 2px solid var(--ink);
+    background: var(--ink); color: #fff;
+    transition: opacity .15s, transform .1s;
+  }
+  .btn:active { transform: scale(.98); }
+  .btn.ghost { background: transparent; color: var(--ink); }
+  .btn[disabled] { opacity: .35; cursor: not-allowed; }
+  .grow { flex: 1; }
+  .link {
+    background: none; border: 0; padding: 4px 2px; font: inherit; color: var(--muted);
+    text-decoration: underline; cursor: pointer;
+  }
+  .err { color: #b3123f; font-weight: 500; margin-top: 14px; min-height: 1.4em; }
+  .note { font-size: 14px; color: var(--muted); margin-top: auto; padding-top: 28px; }
+  .hp { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; }
+  }
+</style>
+</head>
+<body>
+<main class="app">
+  <div class="bars" id="bars" aria-hidden="true"></div>
+  <input class="hp" id="hp" type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
+  <section class="stage" id="stage" aria-live="polite"></section>
+</main>
+
+<script src="/questions.js"></script>
+<script>
+(function () {
+  var Q = window.QUESTIONS, L = window.LIKERT;
+  var N = Q.length;
+  var stage = document.getElementById('stage');
+  var barsEl = document.getElementById('bars');
+  var answers = new Array(N).fill(0);
+  var step = -1;              // -1 intro, 0..N-1 questions, N done
+  var sending = false;
+  var DONE_KEY = 'reels_survey_done';
+
+  for (var i = 0; i < N; i++) barsEl.appendChild(document.createElement('i'));
+
+  function paintBars() {
+    var segs = barsEl.children;
+    for (var i = 0; i < segs.length; i++) {
+      segs[i].className = step >= N || i < step ? 'on' : (i === step ? 'on now' : '');
+    }
+  }
+
+  function intro() {
+    stage.innerHTML =
+      '<h1>How do Reels fit into your study time?</h1>' +
+      '<p>Ten quick questions, about two minutes. We\u2019re two engineering students studying how short videos relate to focus while studying.</p>' +
+      '<p class="muted">It\u2019s anonymous. We don\u2019t ask for your name, only your age group.</p>' +
+      '<div class="nav"><button class="btn" id="start">Start the survey</button></div>' +
+      '<p class="note">A student project at Thapar Institute of Engineering and Technology, Patiala.</p>';
+    document.getElementById('start').onclick = function () { go(0); };
+  }
+
+  function question(i) {
+    var q = Q[i];
+    var opts = q.type === 'likert' ? L : q.options;
+    var html = '<p class="count">' + (i + 1) + ' of ' + N + '</p>' +
+      '<h2 id="qt">' + q.text + '</h2>' +
+      '<div class="opts" role="radiogroup" aria-labelledby="qt">';
+    opts.forEach(function (label, k) {
+      var v = k + 1;
+      html += '<button type="button" class="opt" role="radio" data-v="' + v + '" aria-checked="' + (answers[i] === v) + '">' +
+        '<span class="dot"></span><span>' + label + '</span></button>';
+    });
+    html += '</div><div class="err" id="err"></div>' +
+      '<div class="nav">' +
+      (i > 0 ? '<button class="btn ghost" id="back">Back</button>' : '') +
+      '<span class="grow"></span>' +
+      (i === N - 1
+        ? '<button class="btn" id="next" ' + (answers[i] ? '' : 'disabled') + '>Submit</button>'
+        : '<button class="btn" id="next" ' + (answers[i] ? '' : 'disabled') + '>Next</button>') +
+      '</div>';
+    stage.innerHTML = html;
+
+    var nextBtn = document.getElementById('next');
+    Array.prototype.forEach.call(stage.querySelectorAll('.opt'), function (b) {
+      b.onclick = function () {
+        answers[i] = +b.getAttribute('data-v');
+        Array.prototype.forEach.call(stage.querySelectorAll('.opt'), function (o) {
+          o.setAttribute('aria-checked', o === b ? 'true' : 'false');
+        });
+        nextBtn.disabled = false;
+        if (i < N - 1) setTimeout(function () { if (step === i) go(i + 1); }, 220);
+        else nextBtn.focus();
+      };
+    });
+    nextBtn.onclick = function () { i === N - 1 ? submit() : go(i + 1); };
+    var back = document.getElementById('back');
+    if (back) back.onclick = function () { go(i - 1); };
+  }
+
+  function done() {
+    stage.innerHTML =
+      '<h1>That\u2019s all of it. Thank you.</h1>' +
+      '<p>Your response has been saved. If you know someone who studies and scrolls, send them the link too. More answers make our results more reliable.</p>' +
+      '<div class="nav">' + (navigator.share ? '<button class="btn" id="share">Share the survey</button>' : '') + '</div>';
+    var s = document.getElementById('share');
+    if (s) s.onclick = function () {
+      navigator.share({ title: 'Reels and studying survey', url: location.origin }).catch(function () {});
+    };
+  }
+
+  function go(n) {
+    step = n;
+    paintBars();
+    if (n < 0) intro(); else if (n >= N) done(); else question(n);
+    window.scrollTo(0, 0);
+  }
+
+  function submit() {
+    if (sending) return;
+    if (answers.some(function (a) { return !a; })) return;
+    sending = true;
+    var btn = document.getElementById('next');
+    var err = document.getElementById('err');
+    btn.disabled = true; btn.textContent = 'Saving\u2026'; err.textContent = '';
+    fetch('/api/submit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ a: answers, website: document.getElementById('hp').value })
+    }).then(function (r) {
+      return r.json().then(function (j) { return { ok: r.ok, j: j }; });
+    }).then(function (res) {
+      if (!res.ok) throw new Error(res.j.error || 'Something went wrong.');
+      try { localStorage.setItem(DONE_KEY, '1'); } catch (e) {}
+      sending = false;
+      go(N);
+    }).catch(function (e) {
+      sending = false;
+      btn.disabled = false; btn.textContent = 'Submit';
+      err.textContent = (e.message || 'Could not save.') + ' Check your connection and press Submit again.';
+    });
+  }
+
+  var already = false;
+  try { already = localStorage.getItem(DONE_KEY) === '1'; } catch (e) {}
+  if (already) { step = N; paintBars(); stage.innerHTML =
+    '<h1>You\u2019ve already responded.</h1><p>Thanks, your answers are saved. Each person only needs to fill this in once.</p>'; }
+  else go(-1);
+
+  document.addEventListener('keydown', function (e) {
+    if (step < 0 || step >= N) return;
+    var k = parseInt(e.key, 10);
+    var opts = stage.querySelectorAll('.opt');
+    if (k >= 1 && k <= opts.length) opts[k - 1].click();
+  });
+})();
+</script>
+</body>
+</html>

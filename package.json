@@ -1,0 +1,9 @@
+{
+  "name": "reels-attention-survey",
+  "version": "1.1.0",
+  "private": true,
+  "description": "Anonymous survey on Instagram Reels and study focus (stores data in Vercel Blob)",
+  "dependencies": {
+    "@vercel/blob": "^2.0.0"
+  }
+}

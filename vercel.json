@@ -1,0 +1,7 @@
+{
+  "cleanUrls": true,
+  "functions": {
+    "api/bulk.js": { "maxDuration": 60 },
+    "api/responses.js": { "maxDuration": 30 }
+  }
+}
